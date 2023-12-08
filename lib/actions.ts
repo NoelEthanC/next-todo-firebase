@@ -4,14 +4,22 @@ import {
   addDoc,
   doc,
   getDocs,
+  getDoc,
   collection,
-  serverTimestamp,
   Timestamp,
+  orderBy,
+  query,
+  where,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { revalidatePath } from "next/cache";
-import { redirect, permanentRedirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./auth";
+import { Task, TaskState, NewState } from "@/scripts/definitions";
 
 let regex = new RegExp(/^([01]\d|2[0-3]):?([0-5]\d)$/);
 
@@ -24,10 +32,9 @@ const TodoSchema = z.object({
   created_at: z.date(),
 });
 
-//
+//action to create and store a todo task
 const CreateTodo = TodoSchema.omit({ id: true, created_at: true });
 export async function createTodo(formData: FormData) {
-  console.log("createTodo invoked...");
   const validatedFields = CreateTodo.safeParse({
     task: formData.get("task"),
     description: formData.get("description"),
@@ -46,15 +53,15 @@ export async function createTodo(formData: FormData) {
   // store the data
   const docRef = collection(db, "todos");
   try {
-    const newDocRef = await addDoc(docRef, {
+    await addDoc(docRef, {
       task: task,
       description: description,
       from: from,
       to: to,
+      created_at: Timestamp.now(),
     });
-    console.log(newDocRef.id);
   } catch (error) {
-    console.log("database error: adding a todo task ");
+    console.log(" database error: adding a todo task |", error);
   }
 
   revalidatePath("/");
@@ -62,12 +69,20 @@ export async function createTodo(formData: FormData) {
 }
 
 // get all todos from firebase
-
 export async function getTodos() {
   noStore();
+  // const session = await getServerSession(authOptions);
+  // if (session) {
+  // const currentUserID = session?.user.id;
   const docRef = collection(db, "todos");
   try {
-    const dataSnapShot = await getDocs(docRef);
+    const getTodosQuery = query(
+      docRef,
+      orderBy("created_at", "desc")
+      // where("uid", "==", currentUserID)
+    );
+
+    const dataSnapShot = await getDocs(getTodosQuery);
     const data = dataSnapShot.docs.map((doc) => ({
       ...doc.data(),
       id: doc.id,
@@ -76,4 +91,73 @@ export async function getTodos() {
   } catch (error) {
     console.log("database error fetching data", error);
   }
+  // } else {
+  // return null;
+  // console.log("user not logged in");
+  // }
+}
+
+// get a single Todo task by ID
+export async function getTodoByID(todoID: string) {
+  const docRef = doc(db, "todos", todoID);
+  try {
+    const todoSnapShot = await getDoc(docRef);
+    const todo = { id: todoSnapShot.id, ...todoSnapShot.data() };
+    return todo;
+  } catch (error) {
+    console.log("Error fetching todo", error);
+  }
+}
+
+// update a single Todo task
+const UpdateTodo = TodoSchema.omit({ id: true, created_at: true });
+export async function updateTodo(
+  todoID: string,
+  prevState: TaskState,
+  formData: FormData
+) {
+  const validatedFields = UpdateTodo.safeParse({
+    task: formData.get("task"),
+    description: formData.get("description"),
+    from: formData.get("from"),
+    to: formData.get("to"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to Update Task.",
+    };
+  }
+  const { task, description, from, to } = validatedFields.data;
+
+  // store the data
+  const docRef = doc(db, "todos", todoID);
+  try {
+    await updateDoc(docRef, {
+      task: task,
+      description: description,
+      from: from,
+      to: to,
+      updated_at: Timestamp.now(),
+    });
+  } catch (error) {
+    console.log(" database error: adding a todo task |", error);
+  }
+
+  revalidatePath("/");
+  redirect("/");
+}
+
+// delete a todo task
+
+export async function deleteTodo(id: string) {
+  const docRef = doc(db, "todos", id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.log("Error deleting task in database,", error);
+  }
+  revalidatePath("/");
+  redirect("/");
 }

@@ -10,7 +10,7 @@ const CardWrapper = async () => {
   // console.log(todos);
   return (
     <main className="flex flex-wrap gap-6 ">
-      {todos?.map((todo: Task) => (
+      {todos?.map((todo) => (
         <TodoItem todo={todo} key={todo.id} />
       ))}
     </main>

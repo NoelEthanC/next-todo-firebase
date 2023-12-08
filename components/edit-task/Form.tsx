@@ -1,51 +1,33 @@
 "use client";
 
 import React from "react";
-import {
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { createTodo } from "@/lib/actions";
-import { useRouter } from "next/navigation";
-import { useFormStatus } from "react-dom";
-import { SpinnerCircular } from "spinners-react";
+import { updateTodo } from "@/lib/actions";
+import { TaskState, NewState } from "@/scripts/definitions";
+import { useFormState } from "react-dom";
 
-const SubmitButton = () => {
-  const { pending } = useFormStatus();
-  console.log(pending);
-  return (
-    <Button type="submit" disabled={pending} className="flex space-x-2 ">
-      {pending ? <SpinnerCircular color="#fff" /> : <>Save changes</>}
-    </Button>
-  );
+export type State = {
+  message: string | null;
+  errors: TaskState;
 };
 
-const Form = () => {
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
-    await createTodo(formData);
-    router.back();
+const Form = (props: any) => {
+  const { todo } = props;
+  const initial = {
+    message: null,
+    errors: {},
   };
+
+  const updateTodoWithID = updateTodo.bind(null, todo.id);
+  const [state, dispatch] = useFormState(updateTodoWithID, initial);
   return (
-    <form onSubmit={handleSubmit}>
-      <DialogHeader>
-        <DialogTitle>Create Todo</DialogTitle>
-        <DialogDescription>
-          Make a todo task here. Click save when you're done.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="grid gap-4 py-4">
+    <form
+      action={dispatch}
+      className="max-w-xl mx-auto text-white mt-6 p-6 bg-gray-950 rounded-md "
+    >
+      <div className="grid gap-4 py-4 mx-auto ">
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="task" className="text-right">
             Task
@@ -56,7 +38,11 @@ const Form = () => {
             name="task"
             placeholder="task"
             className="col-span-3"
+            defaultValue={todo?.task}
           />
+          <div className="">
+            {state.errors.task && <p className="">{state.errors.task}</p>}
+          </div>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="username" className="text-right">
@@ -66,8 +52,14 @@ const Form = () => {
             id="description"
             name="description"
             placeholder="description"
+            defaultValue={todo?.description}
             className="col-span-3"
           />
+          <div className="">
+            {state.errors.description && (
+              <p className="">{state.errors.description}</p>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="username" className="text-right">
@@ -76,27 +68,32 @@ const Form = () => {
           <Input
             id="from"
             name="from"
-            defaultValue="08:00"
+            defaultValue={todo?.from}
             className="col-span-3"
             type="time"
           />
+          <div className="">
+            {state.errors.from && <p className="">{state.errors.from}</p>}
+          </div>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="username" className="text-right">
             To
           </Label>
           <Input
-            id="to"
             name="to"
-            defaultValue="08:00"
             className="col-span-3"
+            defaultValue={todo?.to}
             type="time"
           />
+          <div className="">
+            {state.errors.to && <p className="">{state.errors.to}</p>}
+          </div>
         </div>
       </div>
-      {/* <DialogFooter> */}
-      <SubmitButton />
-      {/* </DialogFooter> */}
+      <div className="flex w-full justify-end ">
+        <Button type="submit">Save changes</Button>
+      </div>
     </form>
   );
 };

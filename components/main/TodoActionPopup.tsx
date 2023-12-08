@@ -10,8 +10,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "../ui/button";
+import Link from "next/link";
+import DeleteButton from "./DeleteButton";
 
-const TodoActionPopup = () => {
+const TodoActionPopup = ({ todoID }: { todoID: string }) => {
   return (
     <div className="">
       <DropdownMenu>
@@ -26,9 +28,14 @@ const TodoActionPopup = () => {
           <DropdownMenuItem className=" cursor-pointer ">
             Mark As Complete
           </DropdownMenuItem>
-          <DropdownMenuItem className=" cursor-pointer ">Edit</DropdownMenuItem>
+          <Link href={`/edit/${todoID}`}>
+            <DropdownMenuItem className=" cursor-pointer ">
+              Edit
+            </DropdownMenuItem>
+          </Link>
+
           <DropdownMenuItem className=" cursor-pointer ">
-            Delete
+            <DeleteButton id={todoID} />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

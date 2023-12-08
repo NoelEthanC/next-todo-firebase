@@ -13,7 +13,7 @@ const TodoItem = ({ todo }: { todo: Task }) => {
       </Badge>
       <div className=" flex justify-between items-center ">
         <h4 className=" font-semibold tracking-wide leading-3 ">{todo.task}</h4>
-        <TodoActionPopup />
+        <TodoActionPopup todoID={todo.id} />
       </div>
       <div className="flex justify-between items-center ">
         <p>
